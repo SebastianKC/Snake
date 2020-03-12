@@ -52,6 +52,56 @@ namespace SnakeWPF
             DrawGameArea();
         }
 
+        private void GameTickTimer_Tick(object sender, EventArgs e)
+        {
+            MoveSnake();
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            SnakeDirection originalSnakeDirection = snakeDirection;
+            switch (e.Key)
+            {
+                case Key.Up:
+                    if (snakeDirection != SnakeDirection.Down)
+                        snakeDirection = SnakeDirection.Up;
+                    break;
+                case Key.Down:
+                    if (snakeDirection != SnakeDirection.Up)
+                        snakeDirection = SnakeDirection.Down;
+                    break;
+                case Key.Left:
+                    if (snakeDirection != SnakeDirection.Right)
+                        snakeDirection = SnakeDirection.Left;
+                    break;
+                case Key.Right:
+                    if (snakeDirection != SnakeDirection.Left)
+                        snakeDirection = SnakeDirection.Right;
+                    break;
+                case Key.W:
+                    if (snakeDirection != SnakeDirection.Down)
+                        snakeDirection = SnakeDirection.Up;
+                    break;
+                case Key.S:
+                    if (snakeDirection != SnakeDirection.Up)
+                        snakeDirection = SnakeDirection.Down;
+                    break;
+                case Key.A:
+                    if (snakeDirection != SnakeDirection.Right)
+                        snakeDirection = SnakeDirection.Left;
+                    break;
+                case Key.D:
+                    if (snakeDirection != SnakeDirection.Left)
+                        snakeDirection = SnakeDirection.Right;
+                    break;
+                case Key.Space:
+                    StartNewGame();
+                    break;
+            }
+            if (snakeDirection != originalSnakeDirection)
+                MoveSnake();
+        }
+
         private void DrawGameArea()
         {
             bool doneDrawingBackground = false;
@@ -87,6 +137,31 @@ namespace SnakeWPF
                     doneDrawingBackground = true;
                 }
             }
+        }
+
+        private void StartNewGame()
+        {
+            foreach (SnakePart snakeBodyPart in snakeParts)
+            {
+                if (snakeBodyPart.UiElement != null)
+                    GameArea.Children.Remove(snakeBodyPart.UiElement);
+            }
+            snakeParts.Clear();
+            if (snakeFood != null)
+                GameArea.Children.Remove(snakeFood);
+
+            currentScore = 0;
+            snakeLength = SnakeStartLength;
+            snakeDirection = SnakeDirection.Right;
+            snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * 5, SnakeSquareSize * 5) });
+            gameTickTimer.Interval = TimeSpan.FromMilliseconds(SnakeStartSpeed);
+
+            DrawSnake();
+            DrawSnakeFood();
+
+            UpdateGameStatus();
+
+            gameTickTimer.IsEnabled = true;
         }
 
         private void DrawSnake()
@@ -151,34 +226,29 @@ namespace SnakeWPF
             DoCollisionCheck();          
         }
 
-        private void GameTickTimer_Tick(object sender, EventArgs e)
+        private void DrawSnakeFood()
         {
-            MoveSnake();
+            Point foodPosition = GetNextFoodPosition();
+            snakeFood = new Ellipse()
+            {
+                Width = SnakeSquareSize,
+                Height = SnakeSquareSize,
+                Fill = foodBrush
+            };
+            GameArea.Children.Add(snakeFood);
+            Canvas.SetTop(snakeFood, foodPosition.Y);
+            Canvas.SetLeft(snakeFood, foodPosition.X);
         }
 
-        private void StartNewGame()
+        private void EatSnakeFood()
         {
-            foreach (SnakePart snakeBodyPart in snakeParts)
-            {
-                if (snakeBodyPart.UiElement != null)
-                    GameArea.Children.Remove(snakeBodyPart.UiElement);
-            }
-            snakeParts.Clear();
-            if (snakeFood != null)
-                GameArea.Children.Remove(snakeFood);
-
-            currentScore = 0;
-            snakeLength = SnakeStartLength;
-            snakeDirection = SnakeDirection.Right;
-            snakeParts.Add(new SnakePart() { Position = new Point(SnakeSquareSize * 5, SnakeSquareSize * 5) });
-            gameTickTimer.Interval = TimeSpan.FromMilliseconds(SnakeStartSpeed);
-
-            DrawSnake();
+            snakeLength++;
+            currentScore++;
+            int timerInterval = Math.Max(SnakeSpeedThreshold, (int)gameTickTimer.Interval.TotalMilliseconds - (currentScore * 2));
+            gameTickTimer.Interval = TimeSpan.FromMilliseconds(timerInterval);
+            GameArea.Children.Remove(snakeFood);
             DrawSnakeFood();
-
             UpdateGameStatus();
-   
-            gameTickTimer.IsEnabled = true;
         }
 
         private Point GetNextFoodPosition()
@@ -195,65 +265,6 @@ namespace SnakeWPF
             }
 
             return new Point(foodX, foodY);
-        }
-
-        private void DrawSnakeFood()
-        {
-            Point foodPosition = GetNextFoodPosition();
-            snakeFood = new Ellipse()
-            {
-                Width = SnakeSquareSize,
-                Height = SnakeSquareSize,
-                Fill = foodBrush
-            };
-            GameArea.Children.Add(snakeFood);
-            Canvas.SetTop(snakeFood, foodPosition.Y);
-            Canvas.SetLeft(snakeFood, foodPosition.X);
-        }
-
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            SnakeDirection originalSnakeDirection = snakeDirection;
-            switch (e.Key)
-            {
-                case Key.Up:
-                    if (snakeDirection != SnakeDirection.Down)
-                        snakeDirection = SnakeDirection.Up;
-                    break;
-                case Key.Down:
-                    if (snakeDirection != SnakeDirection.Up)
-                        snakeDirection = SnakeDirection.Down;
-                    break;
-                case Key.Left:
-                    if (snakeDirection != SnakeDirection.Right)
-                        snakeDirection = SnakeDirection.Left;
-                    break;
-                case Key.Right:
-                    if (snakeDirection != SnakeDirection.Left)
-                        snakeDirection = SnakeDirection.Right;
-                    break;
-                case Key.W:
-                    if (snakeDirection != SnakeDirection.Down)
-                        snakeDirection = SnakeDirection.Up;
-                    break;
-                case Key.S:
-                    if (snakeDirection != SnakeDirection.Up)
-                        snakeDirection = SnakeDirection.Down;
-                    break;
-                case Key.A:
-                    if (snakeDirection != SnakeDirection.Right)
-                        snakeDirection = SnakeDirection.Left;
-                    break;
-                case Key.D:
-                    if (snakeDirection != SnakeDirection.Left)
-                        snakeDirection = SnakeDirection.Right;
-                    break;
-                case Key.Space:
-                    StartNewGame();
-                    break;
-            }
-            if (snakeDirection != originalSnakeDirection)
-                MoveSnake();
         }
 
         private void DoCollisionCheck()
@@ -277,17 +288,6 @@ namespace SnakeWPF
                 if ((snakeHead.Position.X == snakeBodyPart.Position.X) && (snakeHead.Position.Y == snakeBodyPart.Position.Y))
                     EndGame();
             }
-        }
-
-        private void EatSnakeFood()
-        {
-            snakeLength++;
-            currentScore++;
-            int timerInterval = Math.Max(SnakeSpeedThreshold, (int)gameTickTimer.Interval.TotalMilliseconds - (currentScore * 2));
-            gameTickTimer.Interval = TimeSpan.FromMilliseconds(timerInterval);
-            GameArea.Children.Remove(snakeFood);
-            DrawSnakeFood();
-            UpdateGameStatus();
         }
 
         private void UpdateGameStatus()
